@@ -1,41 +1,51 @@
 import React, { useState } from 'react';
-import './upload.css'; // ✅ Import your existing upload CSS
+import './upload.css';
 
 const UploadLie = () => {
   const [file, setFile] = useState(null);
 
   const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
+    const uploadedFile = e.target.files[0];
+    const validTypes = ['.csv']; // Allowed file types for Lie Detection
+    if (uploadedFile && validTypes.some(type => uploadedFile.name.endsWith(type))) {
+      setFile(uploadedFile);
+    } else {
+      alert('Only .csv files are allowed for Lie Detection.');
+      setFile(null);
+    }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!file) {
-      alert("Please select a file!");
-      return;
-    }
-    const allowedExtensions = ['csv'];
-    const fileExtension = file.name.split('.').pop().toLowerCase();
+    if (!file) return alert('Please upload a valid file.');
 
-    if (!allowedExtensions.includes(fileExtension)) {
-      alert('Only CSV files are allowed for Lie Detection.');
-      return;
-    }
+    const formData = new FormData();
+    formData.append('file', file);
 
-    console.log("Uploading for Lie Detection:", file.name);
-    // Later: You will connect this to your backend upload API
+    try {
+      const response = await fetch('http://localhost:8080/myapp/api/eeg/lie/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        alert(`File uploaded successfully: ${result.message}`);
+      } else {
+        const error = await response.text();
+        alert(`Error uploading file: ${error}`);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('An error occurred while uploading the file.');
+    }
   };
 
   return (
     <div className="upload-container">
-      <form onSubmit={handleSubmit} className="upload-box">
-        <h2>Upload EEG for Lie Detection</h2>
-        <input
-          type="file"
-          accept=".csv"
-          onChange={handleFileChange}
-          required
-        />
+      <h2>Upload EEG File for Lie Detection</h2>
+      <form onSubmit={handleSubmit} className="upload-form">
+        <input type="file" accept=".csv" onChange={handleFileChange} />
         <button type="submit">Upload</button>
       </form>
     </div>

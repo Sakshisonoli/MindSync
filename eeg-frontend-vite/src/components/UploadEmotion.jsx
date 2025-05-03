@@ -6,7 +6,7 @@ const UploadEmotion = () => {
 
   const handleFileChange = (e) => {
     const uploadedFile = e.target.files[0];
-    const validTypes = ['.mat', '.bdf'];
+    const validTypes = ['.mat', '.bdf']; // Allowed file types for Emotion Detection
     if (uploadedFile && validTypes.some(type => uploadedFile.name.endsWith(type))) {
       setFile(uploadedFile);
     } else {
@@ -15,11 +15,30 @@ const UploadEmotion = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!file) return alert('Please upload a valid file.');
-    console.log('Submitting emotion file:', file);
-    // Send to backend API here
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('http://localhost:8080/api/emotion/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        alert(`File uploaded successfully: ${result.message}`);
+      } else {
+        const error = await response.text();
+        alert(`Error uploading file: ${error}`);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('An error occurred while uploading the file.');
+    }
   };
 
   return (

@@ -1,41 +1,51 @@
 import React, { useState } from 'react';
-import './upload.css'; // ✅ Import your existing upload.css
+import './upload.css';
 
 const UploadSeizure = () => {
   const [file, setFile] = useState(null);
 
   const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
+    const uploadedFile = e.target.files[0];
+    const validTypes = ['.edf', '.csv', '.parquet']; // Allowed file types for Seizure Detection
+    if (uploadedFile && validTypes.some(type => uploadedFile.name.endsWith(type))) {
+      setFile(uploadedFile);
+    } else {
+      alert('Only .edf, .csv, and .parquet files are allowed for Seizure Detection.');
+      setFile(null);
+    }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!file) {
-      alert("Please select a file!");
-      return;
-    }
-    const allowedExtensions = ['edf', 'csv', 'parquet'];
-    const fileExtension = file.name.split('.').pop().toLowerCase();
+    if (!file) return alert('Please upload a valid file.');
 
-    if (!allowedExtensions.includes(fileExtension)) {
-      alert('Only .edf, .csv, or .parquet files are allowed for Seizure Detection.');
-      return;
-    }
+    const formData = new FormData();
+    formData.append('file', file);
 
-    console.log("Uploading for Seizure Detection:", file.name);
-    // Later you will connect this to backend API
+    try {
+      const response = await fetch('http://localhost:8080/api/seizure/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        alert(`File uploaded successfully: ${result.message}`);
+      } else {
+        const error = await response.text();
+        alert(`Error uploading file: ${error}`);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('An error occurred while uploading the file.');
+    }
   };
 
   return (
     <div className="upload-container">
-      <form onSubmit={handleSubmit} className="upload-box">
-        <h2>Upload EEG for Seizure Detection</h2>
-        <input
-          type="file"
-          accept=".edf,.csv,.parquet"
-          onChange={handleFileChange}
-          required
-        />
+      <h2>Upload EEG File for Seizure Detection</h2>
+      <form onSubmit={handleSubmit} className="upload-form">
+        <input type="file" accept=".edf,.csv,.parquet" onChange={handleFileChange} />
         <button type="submit">Upload</button>
       </form>
     </div>
