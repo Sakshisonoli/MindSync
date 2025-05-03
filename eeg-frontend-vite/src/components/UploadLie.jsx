@@ -22,9 +22,18 @@ const UploadLie = () => {
     const formData = new FormData();
     formData.append('file', file);
 
+    // Retrieve userId from local storage
+    const userId = localStorage.getItem('userId');
+    if (!userId) {
+      return alert('User is not logged in. Please log in to upload files.');
+    }
+
     try {
       const response = await fetch('http://localhost:8080/myapp/api/eeg/lie/upload', {
         method: 'POST',
+        headers: {
+          'userId': userId, // Dynamically set userId
+        },
         body: formData,
       });
 

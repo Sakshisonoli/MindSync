@@ -1,112 +1,102 @@
 package com.eegproject.eegbackend;
 
-import org.junit.jupiter.api.AfterEach;
+import com.eegproject.eegbackend.controller.FileUploadController;
+import com.eegproject.eegbackend.model.FileMetadata;
+import com.eegproject.eegbackend.repository.FileMetadataRepository;
+import org.bson.types.ObjectId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.data.mongodb.gridfs.GridFsTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.web.multipart.MultipartFile;
-import com.eegproject.eegbackend.controller.FileUploadController; // Ensure this import matches the actual package of FileUploadController
-
-import java.io.File;
-import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest
 class FileUploadControllerTest {
 
+    @InjectMocks
     private FileUploadController fileUploadController;
+
+    @Mock
+    private GridFsTemplate gridFsTemplate;
+
+    @Mock
+    private FileMetadataRepository fileMetadataRepository;
 
     @BeforeEach
     void setUp() {
-        fileUploadController = new FileUploadController();
-    }
-
-    @AfterEach
-    void tearDown() {
-        File uploadsDir = new File("uploads");
-        if (uploadsDir.exists()) {
-            deleteDirectory(uploadsDir);
-        }
-    }
-
-    private void deleteDirectory(File directory) {
-        File[] files = directory.listFiles();
-        if (files != null) {
-            for (File file : files) {
-                if (file.isDirectory()) {
-                    deleteDirectory(file);
-                } else {
-                    file.delete();
-                }
-            }
-        }
-        directory.delete();
+        MockitoAnnotations.openMocks(this);
     }
 
     @Test
-    void testUploadEmotionFile_Success() throws IOException {
+    void testUploadFile_Success() {
         MockMultipartFile mockFile = new MockMultipartFile(
                 "file", "test.mat", "application/octet-stream", "dummy content".getBytes()
         );
+        String feature = "emotion";
+        String userId = "12345";
 
-        MultipartFile spyFile = Mockito.spy(mockFile);
-        doNothing().when(spyFile).transferTo(any(File.class));
+        ObjectId mockFileId = new ObjectId();
+        when(gridFsTemplate.store(any(), eq("test.mat"), eq("application/octet-stream"))).thenReturn(mockFileId);
 
-        ResponseEntity<String> response = fileUploadController.uploadEmotionFile(spyFile);
+        ResponseEntity<?> response = fileUploadController.uploadFile(mockFile, feature, userId);
 
         assertNotNull(response);
         assertEquals(200, response.getStatusCode().value());
-        assertTrue(response.getBody().contains("File uploaded successfully"));
+        assertTrue(response.getBody().toString().contains("File uploaded successfully"));
+
+        verify(fileMetadataRepository, times(1)).save(any(FileMetadata.class));
     }
 
     @Test
-    void testUploadLieFile_InvalidFileType() {
+    void testUploadFile_InvalidFeature() {
         MockMultipartFile mockFile = new MockMultipartFile(
-                "file", "test.txt", "text/plain", "dummy content".getBytes()
+                "file", "test.mat", "application/octet-stream", "dummy content".getBytes()
         );
+        String feature = "invalidFeature";
+        String userId = "12345";
 
-        ResponseEntity<String> response = fileUploadController.uploadLieFile(mockFile);
+        ResponseEntity<?> response = fileUploadController.uploadFile(mockFile, feature, userId);
 
         assertNotNull(response);
         assertEquals(400, response.getStatusCode().value());
-        assertTrue(response.getBody().contains("Invalid file type for lie detection"));
+        assertTrue(response.getBody().toString().contains("Invalid feature"));
     }
 
     @Test
-    void testUploadSeizureFile_EmptyFile() {
+    void testUploadFile_EmptyFile() {
         MockMultipartFile mockFile = new MockMultipartFile(
                 "file", "", "application/octet-stream", new byte[0]
         );
+        String feature = "lie";
+        String userId = "12345";
 
-        ResponseEntity<String> response = fileUploadController.uploadSeizureFile(mockFile);
+        ResponseEntity<?> response = fileUploadController.uploadFile(mockFile, feature, userId);
 
         assertNotNull(response);
         assertEquals(400, response.getStatusCode().value());
-        assertTrue(response.getBody().contains("Please select a file to upload"));
+        assertTrue(response.getBody().toString().contains("Please select a file to upload"));
     }
 
     @Test
-    void testHandleFileUpload_DirectoryCreationFailure() {
-        MultipartFile mockFile = Mockito.mock(MultipartFile.class);
-        when(mockFile.isEmpty()).thenReturn(false);
-        when(mockFile.getOriginalFilename()).thenReturn("test.csv");
+    void testUploadFile_GridFsError() {
+        MockMultipartFile mockFile = new MockMultipartFile(
+                "file", "test.csv", "text/csv", "dummy content".getBytes()
+        );
+        String feature = "lie";
+        String userId = "12345";
 
-        FileUploadController controllerSpy = Mockito.spy(fileUploadController);
+        when(gridFsTemplate.store(any(), eq("test.csv"), eq("text/csv")))
+                .thenThrow(new RuntimeException("GridFS error"));
 
-        File mockDir = Mockito.mock(File.class);
-        doReturn(mockDir).when(controllerSpy).createFeatureDirectory(anyString());
-        when(mockDir.exists()).thenReturn(false);
-        when(mockDir.mkdirs()).thenReturn(false);
-
-        ResponseEntity<String> response = controllerSpy.uploadLieFile(mockFile);
+        ResponseEntity<?> response = fileUploadController.uploadFile(mockFile, feature, userId);
 
         assertNotNull(response);
         assertEquals(500, response.getStatusCode().value());
-        assertTrue(response.getBody().contains("Could not create feature directory"));
+        assertTrue(response.getBody().toString().contains("Runtime exception occurred while uploading file"));
     }
 }

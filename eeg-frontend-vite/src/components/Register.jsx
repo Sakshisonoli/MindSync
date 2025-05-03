@@ -30,11 +30,28 @@ const Register = () => {
     return true;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-    console.log('Register:', { name, contact, email, dob, password });
-    navigate('/login');
+
+    try {
+      const response = await fetch("http://localhost:8080/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, contact, email, dob, password }),
+      });
+
+      if (response.ok) {
+        alert("Registration successful! Please log in.");
+        navigate("/login");
+      } else {
+        const error = await response.text();
+        alert(`Registration failed: ${error}`);
+      }
+    } catch (err) {
+      console.error("Error during registration:", err);
+      alert("An error occurred. Please try again.");
+    }
   };
 
   return (

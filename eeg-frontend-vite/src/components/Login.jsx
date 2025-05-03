@@ -22,14 +22,34 @@ const Login = () => {
     return true;
   };
 
-  const handleSubmit = (e) => {
+  const handleLogin = async () => {
+    try {
+      const response = await fetch('http://localhost:8080/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        localStorage.setItem('userId', data.userId); // Save userId in local storage
+        localStorage.setItem('token', data.token); // Save token if needed
+        alert('Login successful!');
+        navigate('/dashboard');
+      } else {
+        const error = await response.text();
+        alert(`Login failed: ${error}`);
+      }
+    } catch (error) {
+      console.error('Error during login:', error);
+      alert('An error occurred. Please try again.');
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-
-    console.log('Login:', { email, password });
-
-    
-    navigate('/dashboard');
+    handleLogin();
   };
 
   return (
