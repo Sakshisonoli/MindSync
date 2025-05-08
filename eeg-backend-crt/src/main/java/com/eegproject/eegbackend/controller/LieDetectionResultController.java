@@ -15,20 +15,19 @@ public class LieDetectionResultController {
     @Autowired
     private LieDetectionResultRepository lieRepo;
 
+    // Save a new lie detection result
     @PostMapping("/save")
     public LieDetectionResult saveLieResult(@RequestBody LieDetectionResult result) {
         return lieRepo.save(result);
     }
 
-   
-}
-
-
+    // Get all lie detection results
     @GetMapping("/all")
     public List<LieDetectionResult> getAllResults() {
         return lieRepo.findAll();
     }
 
+    // Get lie detection results by user ID
     @GetMapping("/user/{userId}")
     public List<LieDetectionResult> getResultsByUser(@PathVariable String userId) {
         return lieRepo.findByUserId(userId);
