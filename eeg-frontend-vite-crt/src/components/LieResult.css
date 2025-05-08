@@ -1,0 +1,89 @@
+/* src/components/LieResult.css */
+.result-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: linear-gradient(to bottom, #f0f0f0, #ffffff);
+  }
+  
+  .result-card {
+    width: 400px;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    transition: transform 0.3s ease;
+  }
+  
+  .result-card:hover {
+    transform: scale(1.05);
+  }
+  
+  h2 {
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 1.5em;
+  }
+  
+  .result-text {
+    font-size: 1.2em;
+    margin: 20px 0;
+    color: #555;
+  }
+  
+  .result-text strong {
+    font-size: 1.5em;
+    color: #222;
+  }
+  
+  .result-animation {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100px;
+    margin-top: 20px;
+  }
+  
+  .indicator {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    animation: pulse 1.5s infinite;
+  }
+  
+  .lie {
+    background-color: red;
+    animation: pulse-lie 1.5s infinite;
+  }
+  
+  .truth {
+    background-color: green;
+    animation: pulse-truth 1.5s infinite;
+  }
+  
+  @keyframes pulse-lie {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.2);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  
+  @keyframes pulse-truth {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.2);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  
